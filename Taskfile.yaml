@@ -1,0 +1,135 @@
+version: '3'
+
+vars:
+  BINARY_NAME: dgx
+  MAIN_PATH: ./cmd/dgx
+  BUILD_DIR: ./bin
+  VERSION:
+    sh: git describe --tags --always --dirty 2>/dev/null || echo "dev"
+
+tasks:
+  default:
+    desc: Show available tasks
+    cmds:
+      - task --list
+
+  build:
+    desc: Build the binary
+    cmds:
+      - mkdir -p {{.BUILD_DIR}}
+      - go build -ldflags "-X main.Version={{.VERSION}}" -o {{.BUILD_DIR}}/{{.BINARY_NAME}} {{.MAIN_PATH}}
+    sources:
+      - "**/*.go"
+      - go.mod
+      - go.sum
+    generates:
+      - "{{.BUILD_DIR}}/{{.BINARY_NAME}}"
+
+  install:
+    desc: Install the binary to $GOPATH/bin or ~/.local/bin
+    deps: [build]
+    cmds:
+      - |
+        if [ -n "$GOPATH" ]; then
+          cp {{.BUILD_DIR}}/{{.BINARY_NAME}} $GOPATH/bin/
+          echo "Installed to $GOPATH/bin/{{.BINARY_NAME}}"
+        else
+          mkdir -p ~/.local/bin
+          cp {{.BUILD_DIR}}/{{.BINARY_NAME}} ~/.local/bin/
+          echo "Installed to ~/.local/bin/{{.BINARY_NAME}}"
+        fi
+
+  run:
+    desc: Run the application
+    deps: [build]
+    cmds:
+      - "{{.BUILD_DIR}}/{{.BINARY_NAME}} {{.CLI_ARGS}}"
+
+  clean:
+    desc: Clean build artifacts
+    cmds:
+      - rm -rf {{.BUILD_DIR}}
+      - go clean
+
+  test:
+    desc: Run tests
+    cmds:
+      - go test -v -race -coverprofile=coverage.out ./...
+
+  test-coverage:
+    desc: Run tests with coverage report
+    deps: [test]
+    cmds:
+      - go tool cover -html=coverage.out
+
+  lint:
+    desc: Run golangci-lint
+    cmds:
+      - golangci-lint run --timeout=5m
+
+  lint-fix:
+    desc: Run golangci-lint with auto-fix
+    cmds:
+      - golangci-lint run --fix --timeout=5m
+
+  fmt:
+    desc: Format code
+    cmds:
+      - go fmt ./...
+      - gofumpt -l -w . 2>/dev/null || go fmt ./...
+
+  vet:
+    desc: Run go vet
+    cmds:
+      - go vet ./...
+
+  tidy:
+    desc: Tidy go modules
+    cmds:
+      - go mod tidy
+      - go mod verify
+
+  deps:
+    desc: Download dependencies
+    cmds:
+      - go mod download
+
+  upgrade:
+    desc: Upgrade dependencies
+    cmds:
+      - go get -u ./...
+      - go mod tidy
+
+  dev:
+    desc: Run in development mode with auto-reload
+    cmds:
+      - |
+        if ! command -v air &> /dev/null; then
+          echo "Installing air for live reload..."
+          go install github.com/air-verse/air@latest
+        fi
+        air
+
+  check:
+    desc: Run all checks (fmt, vet, lint, test)
+    cmds:
+      - task: fmt
+      - task: vet
+      - task: lint
+      - task: test
+
+  release:
+    desc: Build release binaries for multiple platforms
+    cmds:
+      - mkdir -p {{.BUILD_DIR}}/release
+      - GOOS=linux GOARCH=amd64 go build -ldflags "-s -w -X main.Version={{.VERSION}}" -o {{.BUILD_DIR}}/release/{{.BINARY_NAME}}-linux-amd64 {{.MAIN_PATH}}
+      - GOOS=linux GOARCH=arm64 go build -ldflags "-s -w -X main.Version={{.VERSION}}" -o {{.BUILD_DIR}}/release/{{.BINARY_NAME}}-linux-arm64 {{.MAIN_PATH}}
+      - GOOS=darwin GOARCH=amd64 go build -ldflags "-s -w -X main.Version={{.VERSION}}" -o {{.BUILD_DIR}}/release/{{.BINARY_NAME}}-darwin-amd64 {{.MAIN_PATH}}
+      - GOOS=darwin GOARCH=arm64 go build -ldflags "-s -w -X main.Version={{.VERSION}}" -o {{.BUILD_DIR}}/release/{{.BINARY_NAME}}-darwin-arm64 {{.MAIN_PATH}}
+      - echo "Release binaries built in {{.BUILD_DIR}}/release/"
+
+  help:
+    desc: Show help for the dgx command
+    deps: [build]
+    cmds:
+      - "{{.BUILD_DIR}}/{{.BINARY_NAME}} --help"
