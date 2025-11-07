@@ -22,16 +22,31 @@ A powerful CLI tool to manage connections, SSH tunnels, and GPU monitoring for y
 ### Build from Source
 
 ```bash
-# Clone or navigate to the project
-cd ~/Development/dgx-manager
+# Clone the repository
+git clone git@github.com:jwjohns/dgx-spark-cli.git
+cd dgx-spark-cli
 
-# Using Task (recommended)
-task build
-task install
+# Option 1: Using the install script (recommended)
+./install.sh
 
-# Or using Go directly
+# Option 2: Manual install to ~/.local/bin
+go build -o dgx ./cmd/dgx
+mkdir -p ~/.local/bin
+cp dgx ~/.local/bin/
+# Add to PATH if needed:
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+
+# Option 3: System-wide install
 go build -o dgx ./cmd/dgx
 sudo cp dgx /usr/local/bin/
+```
+
+### Update Existing Installation
+
+```bash
+cd dgx-spark-cli
+./update.sh
 ```
 
 ## Quick Start
@@ -42,11 +57,13 @@ sudo cp dgx /usr/local/bin/
 dgx config set
 ```
 
-You'll be prompted for:
-- Hostname/IP of your DGX Spark
-- SSH port (default: 22)
-- Username
-- SSH key path (default: ~/.ssh/id_ed25519)
+The interactive setup will guide you through:
+- **Hostname/IP** of your DGX Spark
+- **SSH port** (default: 22)
+- **Username** for SSH access
+- **SSH key** - automatically detects existing keys or provides setup instructions
+
+**Note**: The tool will automatically find SSH keys in `~/.ssh/` (ed25519 or RSA). If no key is found, it will show you how to generate one and copy it to your DGX
 
 ### 2. Test Connection
 

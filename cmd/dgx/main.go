@@ -39,9 +39,14 @@ var rootCmd = &cobra.Command{
 	Short: "DGX Spark management CLI",
 	Long:  `A CLI tool to manage connections, tunnels, and GPU monitoring for DGX Spark.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		// Check if config is required for this command
-		requiresConfig := cmd.Name() != "config" && cmd.Name() != "version" && cmd.Name() != "help"
-		if requiresConfig && !cfgManager.IsConfigured() {
+		// Check if this command or its parent is one that doesn't require config
+		cmdPath := cmd.CommandPath()
+		noConfigRequired := strings.Contains(cmdPath, "config") ||
+			strings.Contains(cmdPath, "version") ||
+			strings.Contains(cmdPath, "help") ||
+			strings.Contains(cmdPath, "completion")
+
+		if !noConfigRequired && !cfgManager.IsConfigured() {
 			fmt.Fprintf(os.Stderr, "Error: DGX not configured. Run 'dgx config set' first.\n")
 			os.Exit(1)
 		}
@@ -62,10 +67,17 @@ var configSetCmd = &cobra.Command{
 
 		fmt.Println("Configure DGX Spark Connection")
 		fmt.Println("================================")
+		fmt.Println()
 
+		// Hostname
 		fmt.Print("Hostname/IP: ")
-		fmt.Scanln(&cfg.Host)
+		var host string
+		fmt.Scanln(&host)
+		if host != "" {
+			cfg.Host = host
+		}
 
+		// Port
 		fmt.Print("Port [22]: ")
 		var portStr string
 		fmt.Scanln(&portStr)
@@ -74,16 +86,76 @@ var configSetCmd = &cobra.Command{
 			if err == nil {
 				cfg.Port = port
 			}
+		} else if cfg.Port == 0 {
+			cfg.Port = 22
 		}
 
+		// Username
 		fmt.Print("Username: ")
-		fmt.Scanln(&cfg.User)
+		var user string
+		fmt.Scanln(&user)
+		if user != "" {
+			cfg.User = user
+		}
 
-		fmt.Printf("SSH Key Path [%s]: ", cfg.IdentityFile)
-		var keyPath string
-		fmt.Scanln(&keyPath)
-		if keyPath != "" {
-			cfg.IdentityFile = keyPath
+		// SSH Key
+		fmt.Println()
+		fmt.Println("SSH Key Setup")
+		fmt.Println("-------------")
+
+		// Check if default key exists
+		home, _ := os.UserHomeDir()
+		defaultKeys := []string{
+			home + "/.ssh/id_ed25519",
+			home + "/.ssh/id_rsa",
+		}
+
+		var foundKey string
+		for _, key := range defaultKeys {
+			if _, err := os.Stat(key); err == nil {
+				foundKey = key
+				break
+			}
+		}
+
+		if foundKey != "" {
+			fmt.Printf("Found SSH key: %s\n", foundKey)
+			fmt.Print("Use this key? [Y/n]: ")
+			var useKey string
+			fmt.Scanln(&useKey)
+			if useKey == "" || strings.ToLower(useKey) == "y" {
+				cfg.IdentityFile = foundKey
+			} else {
+				fmt.Print("Enter SSH key path: ")
+				var customKey string
+				fmt.Scanln(&customKey)
+				if customKey != "" {
+					cfg.IdentityFile = customKey
+				}
+			}
+		} else {
+			fmt.Println("⚠️  No SSH key found in ~/.ssh/")
+			fmt.Println()
+			fmt.Println("To generate a new SSH key, run:")
+			fmt.Println("  ssh-keygen -t ed25519 -C \"your-email@example.com\"")
+			fmt.Println()
+			fmt.Println("Then copy it to your DGX:")
+			fmt.Printf("  ssh-copy-id %s@%s\n", cfg.User, cfg.Host)
+			fmt.Println()
+			fmt.Print("Enter SSH key path (or press Enter to use default): ")
+			var keyPath string
+			fmt.Scanln(&keyPath)
+			if keyPath != "" {
+				cfg.IdentityFile = keyPath
+			} else {
+				cfg.IdentityFile = home + "/.ssh/id_ed25519"
+			}
+		}
+
+		// Validate minimum config
+		if cfg.Host == "" || cfg.User == "" {
+			fmt.Fprintf(os.Stderr, "\nError: Hostname and Username are required\n")
+			os.Exit(1)
 		}
 
 		if err := cfgManager.Set(cfg); err != nil {
@@ -93,6 +165,11 @@ var configSetCmd = &cobra.Command{
 
 		fmt.Println("\n✓ Configuration saved!")
 		fmt.Printf("Config file: %s\n", cfgManager.GetConfigPath())
+		fmt.Println()
+		fmt.Println("Next steps:")
+		fmt.Println("  dgx status    # Test connection")
+		fmt.Println("  dgx connect   # SSH to DGX")
+		fmt.Println("  dgx gpu       # Check GPU status")
 	},
 }
 
