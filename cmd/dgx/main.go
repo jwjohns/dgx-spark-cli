@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 	"time"
@@ -10,6 +11,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/weatherman/dgx-manager/internal/config"
 	"github.com/weatherman/dgx-manager/internal/gpu"
+	"github.com/weatherman/dgx-manager/internal/playbook"
 	"github.com/weatherman/dgx-manager/internal/ssh"
 	"github.com/weatherman/dgx-manager/internal/tunnel"
 	"github.com/weatherman/dgx-manager/pkg/types"
@@ -366,6 +368,7 @@ var gpuCmd = &cobra.Command{
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			os.Exit(1)
 		}
+		defer client.Close()
 
 		monitor := gpu.NewMonitor(client)
 
@@ -427,6 +430,180 @@ Examples:
 	},
 }
 
+// setup-key command
+var setupKeyCmd = &cobra.Command{
+	Use:   "setup-key",
+	Short: "Setup SSH key authentication with DGX",
+	Long:  `Helps you copy your SSH public key to the DGX for passwordless authentication.`,
+	Run: func(cmd *cobra.Command, args []string) {
+		cfg := cfgManager.Get()
+
+		// Check if public key exists
+		pubKeyPath := cfg.IdentityFile + ".pub"
+		pubKeyData, err := os.ReadFile(pubKeyPath)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: Cannot read public key at %s\n", pubKeyPath)
+			fmt.Fprintf(os.Stderr, "Make sure your SSH key pair exists.\n")
+			os.Exit(1)
+		}
+
+		fmt.Println("SSH Key Setup for DGX")
+		fmt.Println("======================")
+		fmt.Println()
+		fmt.Printf("Your public key: %s\n", pubKeyPath)
+		fmt.Println(string(pubKeyData))
+		fmt.Println()
+		fmt.Println("To enable passwordless SSH access, you need to copy this key to your DGX.")
+		fmt.Println()
+		fmt.Println("Option 1: Automatic (requires password)")
+		fmt.Println("  Run this command and enter your DGX password when prompted:")
+		fmt.Printf("  ssh-copy-id -i %s %s@%s\n", pubKeyPath, cfg.User, cfg.Host)
+		fmt.Println()
+		fmt.Println("Option 2: Manual")
+		fmt.Println("  1. SSH to your DGX with password:")
+		fmt.Printf("     ssh %s@%s\n", cfg.User, cfg.Host)
+		fmt.Println("  2. On the DGX, run:")
+		fmt.Println("     mkdir -p ~/.ssh && chmod 700 ~/.ssh")
+		fmt.Println("     echo 'YOUR_PUBLIC_KEY' >> ~/.ssh/authorized_keys")
+		fmt.Println("     chmod 600 ~/.ssh/authorized_keys")
+		fmt.Println()
+		fmt.Print("Would you like to try automatic setup now? [Y/n]: ")
+
+		var response string
+		fmt.Scanln(&response)
+
+		if response == "" || strings.ToLower(response) == "y" {
+			fmt.Println()
+			fmt.Println("Attempting to copy SSH key...")
+			fmt.Println("(You will be prompted for your DGX password)")
+			fmt.Println()
+
+			// Use ssh-copy-id with STDIN for password
+			cmd := exec.Command("ssh-copy-id", "-i", pubKeyPath, fmt.Sprintf("%s@%s", cfg.User, cfg.Host))
+			cmd.Stdin = os.Stdin
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
+
+			if err := cmd.Run(); err != nil {
+				fmt.Fprintf(os.Stderr, "\n⚠️  Automatic setup failed.\n")
+				fmt.Fprintf(os.Stderr, "Please use the manual method shown above.\n")
+				os.Exit(1)
+			}
+
+			fmt.Println()
+			fmt.Println("✓ SSH key copied successfully!")
+			fmt.Println()
+			fmt.Println("Test your connection:")
+			fmt.Println("  dgx status")
+			fmt.Println("  dgx gpu")
+		} else {
+			fmt.Println("\nUse one of the methods above to copy your SSH key manually.")
+		}
+	},
+}
+
+// playbook command
+var playbookCmd = &cobra.Command{
+	Use:     "playbook",
+	Aliases: []string{"pb"},
+	Short:   "Manage DGX Spark playbooks",
+}
+
+var playbookListCmd = &cobra.Command{
+	Use:   "list",
+	Short: "List available playbooks",
+	Aliases: []string{"ls"},
+	Run: func(cmd *cobra.Command, args []string) {
+		playbooks := playbook.GetAvailablePlaybooks()
+
+		// Group by category
+		categories := make(map[string][]playbook.Playbook)
+		for _, pb := range playbooks {
+			categories[pb.Category] = append(categories[pb.Category], pb)
+		}
+
+		fmt.Println("Available DGX Spark Playbooks")
+		fmt.Println("=============================\n")
+
+		for category, pbs := range categories {
+			fmt.Printf("## %s\n", category)
+			for _, pb := range pbs {
+				fmt.Printf("  %-25s %s\n", pb.Name, pb.Description)
+			}
+			fmt.Println()
+		}
+
+		fmt.Println("Usage:")
+		fmt.Println("  dgx run <playbook> <command> [args...]")
+		fmt.Println("\nExamples:")
+		fmt.Println("  dgx run ollama install")
+		fmt.Println("  dgx run ollama pull qwen2.5:32b")
+		fmt.Println("  dgx run vllm serve meta-llama/Llama-2-7b-hf")
+		fmt.Println("  dgx run nvfp4 quantize meta-llama/Llama-2-7b-hf")
+	},
+}
+
+// run command
+var runCmd = &cobra.Command{
+	Use:   "run <playbook> <command> [args...]",
+	Short: "Run a DGX Spark playbook",
+	Long: `Execute playbooks for various AI/ML workloads on your DGX Spark.
+
+Available playbooks:
+  ollama  - Local model runner (install, pull, serve, run)
+  vllm    - Optimized LLM inference (pull, serve, status)
+  nvfp4   - 4-bit quantization (setup, quantize)
+
+Examples:
+  dgx run ollama install
+  dgx run ollama pull qwen2.5:32b
+  dgx run vllm serve meta-llama/Llama-2-7b-hf
+  dgx run nvfp4 quantize meta-llama/Llama-2-7b-hf`,
+	Args: cobra.MinimumNArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		client, err := ssh.NewClient(cfgManager.Get())
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
+		defer client.Close()
+
+		manager := playbook.NewManager(client)
+		playbookName := args[0]
+		playbookArgs := args[1:]
+
+		if err := manager.Execute(playbookName, playbookArgs); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
+	},
+}
+
+// exec command for running arbitrary commands
+var execCmd = &cobra.Command{
+	Use:   "exec <command>",
+	Short: "Execute a command on the DGX",
+	Long:  `Run an arbitrary shell command on your DGX Spark.`,
+	Args:  cobra.MinimumNArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		client, err := ssh.NewClient(cfgManager.Get())
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
+		defer client.Close()
+
+		command := strings.Join(args, " ")
+		output, err := client.Execute(command)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
+
+		fmt.Print(output)
+	},
+}
+
 // version command
 var versionCmd = &cobra.Command{
 	Use:   "version",
@@ -447,6 +624,9 @@ func init() {
 	tunnelCmd.AddCommand(tunnelKillCmd)
 	tunnelCmd.AddCommand(tunnelKillAllCmd)
 
+	// playbook subcommands
+	playbookCmd.AddCommand(playbookListCmd)
+
 	// gpu flags
 	gpuCmd.Flags().BoolP("raw", "r", false, "Show raw nvidia-smi output")
 
@@ -460,5 +640,9 @@ func init() {
 	rootCmd.AddCommand(tunnelCmd)
 	rootCmd.AddCommand(gpuCmd)
 	rootCmd.AddCommand(syncCmd)
+	rootCmd.AddCommand(setupKeyCmd)
+	rootCmd.AddCommand(playbookCmd)
+	rootCmd.AddCommand(runCmd)
+	rootCmd.AddCommand(execCmd)
 	rootCmd.AddCommand(versionCmd)
 }

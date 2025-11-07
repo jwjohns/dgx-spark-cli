@@ -143,16 +143,23 @@ func (c *Client) addHostKey() error {
 
 // Execute runs a command on the remote host
 func (c *Client) Execute(command string) (string, error) {
+	// Ensure we're connected
 	if c.client == nil {
 		if err := c.Connect(); err != nil {
 			return "", err
 		}
-		defer c.Close()
 	}
 
 	session, err := c.client.NewSession()
 	if err != nil {
-		return "", fmt.Errorf("failed to create session: %w", err)
+		// If session creation fails, try reconnecting once
+		if err := c.Connect(); err != nil {
+			return "", fmt.Errorf("failed to reconnect: %w", err)
+		}
+		session, err = c.client.NewSession()
+		if err != nil {
+			return "", fmt.Errorf("failed to create session: %w", err)
+		}
 	}
 	defer session.Close()
 

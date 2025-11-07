@@ -1,6 +1,6 @@
 # DGX Manager
 
-A powerful CLI tool to manage connections, SSH tunnels, and GPU monitoring for your DGX Spark system.
+A powerful CLI tool to manage connections, SSH tunnels, GPU monitoring, and AI/ML workloads for your DGX Spark system.
 
 ## Features
 
@@ -9,6 +9,7 @@ A powerful CLI tool to manage connections, SSH tunnels, and GPU monitoring for y
 - 🎮 **GPU Monitoring** - Real-time GPU status, memory usage, and process tracking
 - 📁 **File Synchronization** - Easy rsync-based file transfers
 - ⚙️ **Configuration Management** - Persistent connection settings
+- 🚀 **Integrated Playbooks** - Run Ollama, vLLM, NVFP4 quantization, and more with simple commands
 
 ## Installation
 
@@ -159,6 +160,34 @@ dgx sync dgx:~/remote/path ./local/path
 # Sync with delete (removes extraneous files)
 dgx sync --delete ./local/path dgx:~/remote/path
 ```
+
+### DGX Spark Playbooks
+
+Run AI/ML workloads with integrated playbook support:
+
+```bash
+# List available playbooks
+dgx playbook list
+
+# Ollama - Local model runner
+dgx run ollama install
+dgx run ollama pull qwen2.5:32b
+dgx run ollama serve
+
+# vLLM - Optimized inference
+dgx run vllm pull
+dgx run vllm serve meta-llama/Llama-2-7b-hf
+
+# NVFP4 - 4-bit quantization
+dgx run nvfp4 setup
+dgx run nvfp4 quantize meta-llama/Llama-2-7b-hf
+
+# Execute custom commands
+dgx exec docker ps
+dgx exec nvidia-smi
+```
+
+**See [PLAYBOOKS.md](PLAYBOOKS.md) for complete documentation and examples.**
 
 ## Workflow Examples
 
