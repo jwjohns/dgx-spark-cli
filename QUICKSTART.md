@@ -39,7 +39,7 @@ dgx status
 Expected output:
 ```
 Checking connection to user@dgx-spark:22...
-✓ Connected (latency: 15ms)
+Connected (latency: 15ms)
 Active tunnels: 0
 ```
 

@@ -45,7 +45,7 @@ func (m *Manager) nvfp4Setup() error {
 	}
 
 	fmt.Println(output)
-	fmt.Println("\n✓ NVFP4 environment setup complete!")
+	fmt.Println("\nNVFP4 environment setup complete!")
 	fmt.Println("\nNext steps:")
 	fmt.Println("  1. Set HF_TOKEN: export HF_TOKEN=your_token_here")
 	fmt.Println("  2. Run quantization: dgx run nvfp4 quantize <model-name>")
@@ -61,7 +61,7 @@ func (m *Manager) nvfp4Quantize(modelName string) error {
 	fmt.Println("\nChecking for Hugging Face token...")
 	tokenCheck, _ := m.sshClient.Execute("echo $HF_TOKEN")
 	if strings.TrimSpace(tokenCheck) == "" {
-		fmt.Println("⚠️  Warning: HF_TOKEN not set")
+		fmt.Println("Warning: Warning: HF_TOKEN not set")
 		fmt.Println("Set it with: export HF_TOKEN=your_token_here")
 		fmt.Println("Or run with: HF_TOKEN=xxx dgx run nvfp4 quantize ...")
 	}
@@ -91,7 +91,7 @@ func (m *Manager) nvfp4Quantize(modelName string) error {
 	}
 
 	fmt.Println(output)
-	fmt.Println("\n✓ NVFP4 quantization complete!")
+	fmt.Println("\nNVFP4 quantization complete!")
 	fmt.Printf("Output saved to: ~/nvfp4_output on DGX\n")
 	fmt.Println("\nTo download the quantized model:")
 	fmt.Println("  dgx sync dgx:~/nvfp4_output ./quantized_models")

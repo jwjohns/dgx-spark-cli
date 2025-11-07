@@ -4,12 +4,12 @@ A powerful CLI tool to manage connections, SSH tunnels, GPU monitoring, and AI/M
 
 ## Features
 
-- 🔌 **SSH Connection Management** - Quick access to your DGX Spark
-- 🚇 **Dynamic Port Forwarding** - Create and manage SSH tunnels on the fly
-- 🎮 **GPU Monitoring** - Real-time GPU status, memory usage, and process tracking
-- 📁 **File Synchronization** - Easy rsync-based file transfers
-- ⚙️ **Configuration Management** - Persistent connection settings
-- 🚀 **Integrated Playbooks** - Run Ollama, vLLM, NVFP4 quantization, and more with simple commands
+- **SSH Connection Management** - Quick access to your DGX Spark
+- **Dynamic Port Forwarding** - Create and manage SSH tunnels on the fly
+- **GPU Monitoring** - Real-time GPU status, memory usage, and process tracking
+- **File Synchronization** - Easy rsync-based file transfers
+- **Configuration Management** - Persistent connection settings
+- **Integrated Playbooks** - Run Ollama, vLLM, NVFP4 quantization, and more with simple commands
 
 ## Installation
 
@@ -354,7 +354,7 @@ Create a script to set up your common tunnels:
 dgx tunnel create 8888:8888 "Jupyter"
 dgx tunnel create 6006:6006 "TensorBoard"
 dgx tunnel create 8080:8080 "VSCode"
-echo "✓ All tunnels created"
+echo "All tunnels created"
 dgx tunnel list
 ```
 

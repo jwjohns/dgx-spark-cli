@@ -54,7 +54,7 @@ func (m *Manager) Create(tunnel types.Tunnel) error {
 
 	tunnel.CreatedAt = time.Now()
 
-	fmt.Printf("✓ Tunnel created: localhost:%d -> %s:%d (PID: %d)\n",
+	fmt.Printf("Tunnel created: localhost:%d -> %s:%d (PID: %d)\n",
 		tunnel.LocalPort, tunnel.RemoteHost, tunnel.RemotePort, tunnel.PID)
 
 	return nil
@@ -102,7 +102,7 @@ func (m *Manager) Kill(pid int) error {
 		return fmt.Errorf("failed to kill process %d: %w", pid, err)
 	}
 
-	fmt.Printf("✓ Tunnel (PID %d) terminated\n", pid)
+	fmt.Printf("Tunnel (PID %d) terminated\n", pid)
 	return nil
 }
 

@@ -136,7 +136,7 @@ var configSetCmd = &cobra.Command{
 				}
 			}
 		} else {
-			fmt.Println("⚠️  No SSH key found in ~/.ssh/")
+			fmt.Println("Warning: No SSH key found in ~/.ssh/")
 			fmt.Println()
 			fmt.Println("To generate a new SSH key, run:")
 			fmt.Println("  ssh-keygen -t ed25519 -C \"your-email@example.com\"")
@@ -165,7 +165,7 @@ var configSetCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		fmt.Println("\n✓ Configuration saved!")
+		fmt.Println("\nConfiguration saved!")
 		fmt.Printf("Config file: %s\n", cfgManager.GetConfigPath())
 		fmt.Println()
 		fmt.Println("Next steps:")
@@ -224,11 +224,11 @@ var statusCmd = &cobra.Command{
 		fmt.Printf("Checking connection to %s@%s:%d...\n", cfg.User, cfg.Host, cfg.Port)
 		latency, err := client.CheckConnection()
 		if err != nil {
-			fmt.Printf("✗ Connection failed: %v\n", err)
+			fmt.Printf("Connection failed: %v\n", err)
 			os.Exit(1)
 		}
 
-		fmt.Printf("✓ Connected (latency: %v)\n", latency)
+		fmt.Printf("Connected (latency: %v)\n", latency)
 
 		// Check for active tunnels
 		tm := tunnel.NewManager(cfg)
@@ -354,7 +354,7 @@ var tunnelKillAllCmd = &cobra.Command{
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			os.Exit(1)
 		}
-		fmt.Println("✓ All tunnels terminated")
+		fmt.Println("All tunnels terminated")
 	},
 }
 
@@ -426,7 +426,7 @@ Examples:
 			os.Exit(1)
 		}
 
-		fmt.Println("✓ Sync complete")
+		fmt.Println("Sync complete")
 	},
 }
 
@@ -485,13 +485,13 @@ var setupKeyCmd = &cobra.Command{
 			cmd.Stderr = os.Stderr
 
 			if err := cmd.Run(); err != nil {
-				fmt.Fprintf(os.Stderr, "\n⚠️  Automatic setup failed.\n")
+				fmt.Fprintf(os.Stderr, "\nWarning: Automatic setup failed.\n")
 				fmt.Fprintf(os.Stderr, "Please use the manual method shown above.\n")
 				os.Exit(1)
 			}
 
 			fmt.Println()
-			fmt.Println("✓ SSH key copied successfully!")
+			fmt.Println("SSH key copied successfully!")
 			fmt.Println()
 			fmt.Println("Test your connection:")
 			fmt.Println("  dgx status")

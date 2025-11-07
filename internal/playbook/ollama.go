@@ -52,7 +52,7 @@ func (m *Manager) ollamaInstall() error {
 	}
 
 	fmt.Println(output)
-	fmt.Println("\n✓ Ollama installed successfully!")
+	fmt.Println("\nOllama installed successfully!")
 	return nil
 }
 
@@ -66,7 +66,7 @@ func (m *Manager) ollamaPull(model string) error {
 	}
 
 	fmt.Println(output)
-	fmt.Printf("\n✓ Model %s downloaded successfully!\n", model)
+	fmt.Printf("\nModel %s downloaded successfully!\n", model)
 	return nil
 }
 
@@ -94,7 +94,7 @@ func (m *Manager) ollamaServe() error {
 	}
 
 	pid := strings.TrimSpace(output)
-	fmt.Printf("✓ Ollama service started (PID: %s)\n", pid)
+	fmt.Printf("Ollama service started (PID: %s)\n", pid)
 	fmt.Println("\nTo access Ollama API:")
 	fmt.Println("  1. Create a tunnel: dgx tunnel create 11434:11434 \"Ollama\"")
 	fmt.Println("  2. Access at: http://localhost:11434")
@@ -107,14 +107,14 @@ func (m *Manager) ollamaStatus() error {
 
 	output, err := m.sshClient.Execute("pgrep -f 'ollama serve'")
 	if err != nil || output == "" {
-		fmt.Println("✗ Ollama is not running")
+		fmt.Println("Ollama is not running")
 		fmt.Println("\nTo start Ollama:")
 		fmt.Println("  dgx run ollama serve")
 		return nil
 	}
 
 	pids := strings.TrimSpace(output)
-	fmt.Printf("✓ Ollama is running (PID: %s)\n", pids)
+	fmt.Printf("Ollama is running (PID: %s)\n", pids)
 
 	// Try to get version
 	version, err := m.sshClient.Execute("ollama --version")

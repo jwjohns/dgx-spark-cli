@@ -66,7 +66,7 @@ func (c *Client) Connect() error {
 	if err != nil {
 		// Check if it's a known_hosts error
 		if strings.Contains(err.Error(), "knownhosts:") || strings.Contains(err.Error(), "key is unknown") {
-			fmt.Fprintf(os.Stderr, "\n⚠️  Host key for %s not found in known_hosts\n", c.config.Host)
+			fmt.Fprintf(os.Stderr, "\nWarning: Host key for %s not found in known_hosts\n", c.config.Host)
 			fmt.Fprintf(os.Stderr, "This is normal for first-time connections.\n\n")
 			fmt.Fprintf(os.Stderr, "Add host key to ~/.ssh/known_hosts? [Y/n]: ")
 
@@ -78,7 +78,7 @@ func (c *Client) Connect() error {
 					return fmt.Errorf("failed to add host key: %w", err)
 				}
 
-				fmt.Fprintf(os.Stderr, "✓ Host key added. Retrying connection...\n\n")
+				fmt.Fprintf(os.Stderr, "Host key added. Retrying connection...\n\n")
 
 				// Retry connection with updated known_hosts
 				hostKeyCallback, err = knownhosts.New(knownHostsPath)

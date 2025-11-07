@@ -41,7 +41,7 @@ func (m *Manager) vllmPull() error {
 	}
 
 	fmt.Println(output)
-	fmt.Println("\n✓ vLLM container pulled successfully!")
+	fmt.Println("\nvLLM container pulled successfully!")
 	return nil
 }
 
@@ -67,7 +67,7 @@ func (m *Manager) vllmServe(model string) error {
 	}
 
 	containerID := strings.TrimSpace(output)
-	fmt.Printf("✓ vLLM server started (Container: %s)\n", containerID[:12])
+	fmt.Printf("vLLM server started (Container: %s)\n", containerID[:12])
 	fmt.Println("\nTo access the API:")
 	fmt.Println("  1. Create a tunnel: dgx tunnel create 8000:8000 \"vLLM\"")
 	fmt.Println("  2. API endpoint: http://localhost:8000/v1")
@@ -86,13 +86,13 @@ func (m *Manager) vllmStatus() error {
 	}
 
 	if output == "" {
-		fmt.Println("✗ vLLM server is not running")
+		fmt.Println("vLLM server is not running")
 		fmt.Println("\nTo start vLLM:")
 		fmt.Println("  dgx run vllm serve <model-name>")
 		return nil
 	}
 
-	fmt.Printf("✓ vLLM server is running\n%s\n", output)
+	fmt.Printf("vLLM server is running\n%s\n", output)
 
 	// Try to get health status
 	healthCmd := "docker exec vllm-server curl -s http://localhost:8000/health || echo 'Not accessible'"
@@ -114,6 +114,6 @@ func (m *Manager) vllmStop() error {
 	}
 
 	fmt.Println(output)
-	fmt.Println("✓ vLLM server stopped and removed")
+	fmt.Println("vLLM server stopped and removed")
 	return nil
 }
