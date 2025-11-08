@@ -1,5 +1,9 @@
 # DGX Manager
 
+[![Build](https://github.com/jwjohns/dgx-spark-cli/actions/workflows/release.yml/badge.svg)](https://github.com/jwjohns/dgx-spark-cli/actions/workflows/release.yml)
+![Tests](https://img.shields.io/github/actions/workflow/status/jwjohns/dgx-spark-cli/release.yml?label=tests&logo=go)
+
+
 A powerful CLI tool to manage connections, SSH tunnels, GPU monitoring, and AI/ML workloads for your DGX Spark system.
 
 ## Features
