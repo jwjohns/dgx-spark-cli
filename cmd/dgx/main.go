@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bufio"
+	"encoding/base64"
 	"fmt"
 	"os"
 	"os/exec"
@@ -634,6 +636,122 @@ func isHelpArg(arg string) bool {
 	return arg == "-h" || arg == "--help" || strings.EqualFold(arg, "help")
 }
 
+func promptForSecret(label string) (string, error) {
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Printf("Enter %s: ", label)
+	value, err := reader.ReadString('\n')
+	if err != nil {
+		return "", err
+	}
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return "", fmt.Errorf("%s cannot be empty", label)
+	}
+	return value, nil
+}
+
+func setRemoteEnvVar(varName, value string) error {
+	client, err := ssh.NewClient(cfgManager.Get())
+	if err != nil {
+		return err
+	}
+	defer client.Close()
+
+	encoded := base64.StdEncoding.EncodeToString([]byte(value))
+	script := fmt.Sprintf(`
+import base64, os, pathlib, shlex
+
+name = "%s"
+value = base64.b64decode(os.environ["ENV_VALUE"]).decode()
+
+config_dir = pathlib.Path.home() / ".config" / "dgx"
+env_file = config_dir / "env.sh"
+config_dir.mkdir(parents=True, exist_ok=True)
+
+lines = []
+if env_file.exists():
+    for line in env_file.read_text().splitlines():
+        if not line.startswith(f"export {name}="):
+            lines.append(line)
+lines.append(f"export {name}={shlex.quote(value)}")
+env_file.write_text("\n".join(lines) + "\n")
+
+bashrc = pathlib.Path.home() / ".bashrc"
+source_line = "source ~/.config/dgx/env.sh"
+if bashrc.exists():
+    content = bashrc.read_text()
+else:
+    content = ""
+if source_line not in content:
+    with bashrc.open("a") as fh:
+        if content and not content.endswith("\n"):
+            fh.write("\n")
+        fh.write(source_line + "\n")
+
+print(f"Stored {name} in {env_file} and ensured {bashrc} sources it.")
+`, varName)
+
+	command := fmt.Sprintf("ENV_VALUE=%s python3 - <<'PY'\n%s\nPY", shellQuote(encoded), script)
+	output, err := client.Execute(command)
+	if err != nil {
+		return fmt.Errorf("remote update failed: %w", err)
+	}
+	if strings.TrimSpace(output) != "" {
+		fmt.Println(strings.TrimSpace(output))
+	}
+	return nil
+}
+
+func shellQuote(value string) string {
+	return "'" + strings.ReplaceAll(value, "'", "'\"'\"'") + "'"
+}
+
+// env command
+var envCmd = &cobra.Command{
+	Use:   "env",
+	Short: "Manage environment tokens on your DGX",
+}
+
+var envHFTokenCmd = &cobra.Command{
+	Use:   "hf-token",
+	Short: "Set HF_TOKEN on the DGX",
+	Run: func(cmd *cobra.Command, args []string) {
+		value, _ := cmd.Flags().GetString("value")
+		if value == "" {
+			var err error
+			value, err = promptForSecret("Hugging Face token")
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+				os.Exit(1)
+			}
+		}
+		if err := setRemoteEnvVar("HF_TOKEN", value); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
+	},
+}
+
+var envWandbCmd = &cobra.Command{
+	Use:   "wandb",
+	Short: "Set WANDB_API_KEY on the DGX",
+	Run: func(cmd *cobra.Command, args []string) {
+		value, _ := cmd.Flags().GetString("value")
+		if value == "" {
+			var err error
+			value, err = promptForSecret("Weights & Biases API key")
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+				os.Exit(1)
+			}
+		}
+		if err := setRemoteEnvVar("WANDB_API_KEY", value); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
+	},
+}
+
 // exec command for running arbitrary commands
 var execCmd = &cobra.Command{
 	Use:   "exec <command>",
@@ -688,6 +806,12 @@ func init() {
 	// sync flags
 	syncCmd.Flags().BoolP("delete", "d", false, "Delete extraneous files from destination")
 
+	// env subcommands
+	envHFTokenCmd.Flags().String("value", "", "Token to set (omit to be prompted)")
+	envWandbCmd.Flags().String("value", "", "API key to set (omit to be prompted)")
+	envCmd.AddCommand(envHFTokenCmd)
+	envCmd.AddCommand(envWandbCmd)
+
 	// Add all commands to root
 	rootCmd.AddCommand(configCmd)
 	rootCmd.AddCommand(connectCmd)
@@ -700,4 +824,5 @@ func init() {
 	rootCmd.AddCommand(runCmd)
 	rootCmd.AddCommand(execCmd)
 	rootCmd.AddCommand(versionCmd)
+	rootCmd.AddCommand(envCmd)
 }

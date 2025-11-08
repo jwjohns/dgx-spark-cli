@@ -135,6 +135,15 @@ dgx tunnel create 12434:12434 "Docker Model Runner"
 
 Interactive sessions still require `dgx connect` so you can run `docker model run <model>` directly. See the [Docker Model Runner blog](https://www.docker.com/blog/introducing-docker-model-runner/), the [official docs](https://docs.docker.com/ai/model-runner/), and the [docker/model-runner](https://github.com/docker/model-runner) repository for complete workflows.
 
+#### Hugging Face / W&B tokens
+
+```bash
+dgx env hf-token             # prompts for HF token
+dgx env wandb --value xxxxx   # set WANDB_API_KEY non-interactively
+```
+
+These helpers create `~/.config/dgx/env.sh` on the DGX and source it via `~/.bashrc`.
+
 ### File Management
 
 ```bash

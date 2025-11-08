@@ -208,6 +208,22 @@ dgx tunnel kill <PID>
 
 Check the [Docker Model Runner blog](https://www.docker.com/blog/introducing-docker-model-runner/), the [official docs](https://docs.docker.com/ai/model-runner/), and the [docker/model-runner](https://github.com/docker/model-runner) repository for full workflows.
 
+### Environment Tokens (HF / W&B)
+
+Use the built-in helpers to persist secrets on the DGX (they're stored in `~/.config/dgx/env.sh` and sourced via `~/.bashrc`):
+
+```bash
+# Hugging Face
+dgx env hf-token  # prompts for the token
+dgx env hf-token --value hf_xxx  # non-interactive
+
+# Weights & Biases
+dgx env wandb
+dgx env wandb --value xxxxxx
+```
+
+After running these commands, reconnect or source `~/.config/dgx/env.sh` on the DGX to pick up the variables.
+
 ### File Synchronization
 
 ```bash
