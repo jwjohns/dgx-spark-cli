@@ -252,6 +252,19 @@ dgx sync dgx:~/remote/path ./local/path
 dgx sync --delete ./local/path dgx:~/remote/path
 ```
 
+#### Mutagen (continuous sync)
+
+```bash
+# Create a long-lived two-way sync (requires mutagen CLI)
+dgx mutagen create ./app dgx:~/app --name app-sync --mode two-way-resolved
+
+# Inspect or tear down sessions
+dgx mutagen list
+dgx mutagen terminate app-sync
+```
+
+Mutagen offers low-latency syncing for large projects. Install it from [mutagen.io](https://mutagen.io/) on your laptop—the DGX agent is deployed automatically over SSH using your configured key/port.
+
 ### DGX Spark Playbooks
 
 Run AI/ML workloads with integrated playbook support:

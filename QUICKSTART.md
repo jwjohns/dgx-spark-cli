@@ -159,6 +159,16 @@ dgx sync dgx:~/work/results ./
 dgx sync --delete ./local dgx:~/remote
 ```
 
+#### Continuous sync with Mutagen
+
+```bash
+dgx mutagen create ./src dgx:~/src --name src-sync
+dgx mutagen list
+dgx mutagen terminate src-sync
+```
+
+Install [Mutagen](https://mutagen.io/) locally to use these commands; the CLI handles the remote agent setup automatically via SSH.
+
 ## Troubleshooting
 
 ### "DGX not configured" error

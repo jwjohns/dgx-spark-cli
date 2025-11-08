@@ -751,6 +751,33 @@ func ensureTrailingSlash(path string) string {
 	return path + "/"
 }
 
+func ensureMutagen() {
+	if _, err := exec.LookPath("mutagen"); err != nil {
+		fmt.Fprintln(os.Stderr, "Error: mutagen CLI not found. Install from https://mutagen.io/ before using this command.")
+		os.Exit(1)
+	}
+}
+
+func runMutagen(args ...string) {
+	cmd := exec.Command("mutagen", args...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		fmt.Fprintf(os.Stderr, "mutagen command failed: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+func resolveRemotePath(input string, cfg *types.Config) string {
+	if strings.HasPrefix(input, "dgx:") {
+		return fmt.Sprintf("ssh://%s@%s:%d/%s", cfg.User, cfg.Host, cfg.Port, strings.TrimPrefix(input, "dgx:"))
+	}
+	if strings.HasPrefix(input, "ssh://") {
+		return input
+	}
+	return fmt.Sprintf("ssh://%s@%s:%d/%s", cfg.User, cfg.Host, cfg.Port, input)
+}
+
 // env command
 var envCmd = &cobra.Command{
 	Use:   "env",
@@ -829,6 +856,61 @@ var codexImportConfigCmd = &cobra.Command{
 		}
 
 		fmt.Println("Copied local Codex configuration to DGX (~/.codex).")
+	},
+}
+
+// mutagen commands
+var mutagenCmd = &cobra.Command{
+	Use:   "mutagen",
+	Short: "Manage Mutagen sync sessions",
+}
+
+var mutagenCreateCmd = &cobra.Command{
+	Use:   "create <local> <remote>",
+	Short: "Create a Mutagen sync session",
+	Args:  cobra.ExactArgs(2),
+	Run: func(cmd *cobra.Command, args []string) {
+		ensureMutagen()
+		name, _ := cmd.Flags().GetString("name")
+		if name == "" {
+			name = fmt.Sprintf("dgx-%d", time.Now().Unix())
+		}
+
+		cfg := cfgManager.Get()
+		local := args[0]
+		remote := resolveRemotePath(args[1], cfg)
+
+		sshCmd := fmt.Sprintf("ssh -i %q -p %d", cfg.IdentityFile, cfg.Port)
+		mutagenArgs := []string{"sync", "create", "--name", name, "--ssh-command", sshCmd}
+
+		if mode, _ := cmd.Flags().GetString("mode"); mode != "" {
+			mutagenArgs = append(mutagenArgs, "--sync-mode", mode)
+		}
+		if watch, _ := cmd.Flags().GetString("watch"); watch != "" {
+			mutagenArgs = append(mutagenArgs, "--watch-mode", watch)
+		}
+
+		mutagenArgs = append(mutagenArgs, local, remote)
+		runMutagen(mutagenArgs...)
+	},
+}
+
+var mutagenListCmd = &cobra.Command{
+	Use:   "list",
+	Short: "List Mutagen sync sessions",
+	Run: func(cmd *cobra.Command, args []string) {
+		ensureMutagen()
+		runMutagen("sync", "list")
+	},
+}
+
+var mutagenTerminateCmd = &cobra.Command{
+	Use:   "terminate <name>",
+	Short: "Terminate a Mutagen sync session",
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		ensureMutagen()
+		runMutagen("sync", "terminate", args[0])
 	},
 }
 
@@ -918,6 +1000,14 @@ func init() {
 	codexCmd.AddCommand(codexSetAPIKeyCmd)
 	codexCmd.AddCommand(codexImportConfigCmd)
 
+	// mutagen subcommands
+	mutagenCreateCmd.Flags().String("name", "", "Optional Mutagen session name")
+	mutagenCreateCmd.Flags().String("mode", "", "Mutagen sync mode (two-way-resolved, one-way-safe, etc.)")
+	mutagenCreateCmd.Flags().String("watch", "", "Mutagen watch mode (portable, aggressive, etc.)")
+	mutagenCmd.AddCommand(mutagenCreateCmd)
+	mutagenCmd.AddCommand(mutagenListCmd)
+	mutagenCmd.AddCommand(mutagenTerminateCmd)
+
 	// Add all commands to root
 	rootCmd.AddCommand(configCmd)
 	rootCmd.AddCommand(connectCmd)
@@ -932,4 +1022,5 @@ func init() {
 	rootCmd.AddCommand(versionCmd)
 	rootCmd.AddCommand(envCmd)
 	rootCmd.AddCommand(codexCmd)
+	rootCmd.AddCommand(mutagenCmd)
 }
