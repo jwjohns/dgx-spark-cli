@@ -593,14 +593,21 @@ Available playbooks:
   ollama  - Local model runner (install, pull, serve, run)
   vllm    - Optimized LLM inference (pull, serve, status)
   nvfp4   - 4-bit quantization (setup, quantize)
+  dmr     - Docker Model Runner (setup, install, pull, run, status, logs)
 
 Examples:
   dgx run ollama install
   dgx run ollama pull qwen2.5:32b
   dgx run vllm serve meta-llama/Llama-2-7b-hf
-  dgx run nvfp4 quantize meta-llama/Llama-2-7b-hf`,
-	Args: cobra.MinimumNArgs(1),
+  dgx run nvfp4 quantize meta-llama/Llama-2-7b-hf
+  dgx run dmr status`,
+	DisableFlagParsing: true,
 	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) == 0 || isHelpArg(args[0]) {
+			cmd.Help()
+			return
+		}
+
 		client, err := ssh.NewClient(cfgManager.Get())
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
@@ -611,12 +618,20 @@ Examples:
 		manager := playbook.NewManager(client)
 		playbookName := args[0]
 		playbookArgs := args[1:]
+		if len(playbookArgs) > 0 && isHelpArg(playbookArgs[0]) {
+			playbook.PrintHelp(playbookName)
+			return
+		}
 
 		if err := manager.Execute(playbookName, playbookArgs); err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			os.Exit(1)
 		}
 	},
+}
+
+func isHelpArg(arg string) bool {
+	return arg == "-h" || arg == "--help" || strings.EqualFold(arg, "help")
 }
 
 // exec command for running arbitrary commands
