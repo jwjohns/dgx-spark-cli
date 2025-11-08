@@ -107,7 +107,7 @@ dgx gpu --raw
 ### Docker Model Runner (DMR)
 
 ```bash
-# Run docker model commands on the DGX through SSH
+# Execute docker model commands on the DGX over SSH
 dgx exec "docker model run ai/smollm2:360M-Q4_K_M 'Write a haiku about GPUs'"
 
 # Inspect health/logs
@@ -118,12 +118,14 @@ dgx exec "docker model logs --tail 100"
 dgx tunnel create 12434:12434 "Docker Model Runner"
 ```
 
-Interactive sessions still require `dgx connect` so you can run
-`docker model run <model>` directly. See the
-[Docker Model Runner blog](https://www.docker.com/blog/introducing-docker-model-runner/),
-the [official docs](https://docs.docker.com/ai/model-runner/), and the
-[docker/model-runner](https://github.com/docker/model-runner) repository for
-complete workflows.
+**Sample workflow**
+1. Provision or update the runner: `dgx exec "docker model install-runner --gpu auto"`.
+2. Pull the model you need: `dgx exec "docker model pull ai/smollm2:360M-Q4_K_M"`.
+3. Tunnel the API and hit it locally (for example `curl http://localhost:12434/models`).
+4. Use `dgx connect` when you require an interactive `docker model run` session.
+5. Close the tunnel with `dgx tunnel kill <PID>` once you are finished.
+
+See the [Docker Model Runner blog](https://www.docker.com/blog/introducing-docker-model-runner/), the [official docs](https://docs.docker.com/ai/model-runner/), and the [docker/model-runner](https://github.com/docker/model-runner) repository for complete workflows.
 
 ### File Management
 

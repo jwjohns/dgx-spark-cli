@@ -44,6 +44,11 @@ go build -o dgx ./cmd/dgx
 sudo cp dgx /usr/local/bin/
 ```
 
+### Download Prebuilt Binaries
+
+Grab the latest release from the [GitHub Releases](https://github.com/jwjohns/dgx-spark-cli/releases) page. Each tag ships macOS (arm64/amd64), Linux (arm64/amd64), and Windows (amd64) archives—extract the `dgx` (or `dgx.exe`) binary and place it somewhere on your `PATH`.
+
+
 ### Update Existing Installation
 
 ```bash
@@ -151,8 +156,7 @@ dgx gpu --raw
 
 ### Docker Model Runner (DMR)
 
-Use the built-in `dgx exec` and `dgx tunnel` commands to operate Docker Model
-Runner remotely — no extra integration required:
+Use the built-in `dgx exec` and `dgx tunnel` commands to operate Docker Model Runner remotely — no extra integration required:
 
 ```bash
 # Run any docker model command on the DGX
@@ -169,11 +173,16 @@ dgx tunnel create 12434:12434 "Docker Model Runner"
 dgx tunnel kill <PID>
 ```
 
-For interactive `docker model run` sessions, connect with `dgx connect` first.
-Check the [Docker Model Runner blog](https://www.docker.com/blog/introducing-docker-model-runner/),
-the [official docs](https://docs.docker.com/ai/model-runner/), and the
-[docker/model-runner](https://github.com/docker/model-runner) repository for
-full workflows.
+#### Sample remote workflow
+
+1. Ensure Docker Model Runner is installed on the DGX (follow the [Docker docs](https://docs.docker.com/ai/model-runner/)).
+2. From your laptop, run `dgx exec "docker model install-runner --gpu auto"` to provision/upgrade the controller.
+3. Pull a model via `dgx exec "docker model pull ai/smollm2:360M-Q4_K_M"`.
+4. Forward the API with `dgx tunnel create 12434:12434 "Docker Model Runner"` and access it locally (for example `curl http://localhost:12434/models`).
+5. Send prompts non-interactively through `dgx exec "docker model run ... 'prompt'"` or open `dgx connect` for interactive chats.
+6. Close the tunnel with `dgx tunnel kill <PID>` and manage the runner lifecycle (logs, uninstall) using `dgx exec` as needed.
+
+Check the [Docker Model Runner blog](https://www.docker.com/blog/introducing-docker-model-runner/), the [official docs](https://docs.docker.com/ai/model-runner/), and the [docker/model-runner](https://github.com/docker/model-runner) repository for full workflows.
 
 ### File Synchronization
 
@@ -317,6 +326,8 @@ task install
 # Build release binaries
 task release
 ```
+
+Python tooling is managed with [uv](https://github.com/astral-sh/uv) — use it whenever you need to run or install Python-based utilities.
 
 ## Troubleshooting
 
