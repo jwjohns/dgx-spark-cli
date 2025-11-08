@@ -64,7 +64,7 @@ The interactive setup will guide you through:
 - **Username** for SSH access
 - **SSH key** - automatically detects existing keys or provides setup instructions
 
-**Note**: On macOS machines with NVIDIA Sync installed, `dgx config set` pre-loads the host, user, port, and NVIDIA Sync SSH key from `~/Library/Application Support/NVIDIA/Sync/config/ssh_config`. On Linux/Arch or systems without Sync the wizard falls back to your standard `~/.ssh/id_ed25519` or `id_rsa` keys and shows you how to create one if needed.
+**Note**: When NVIDIA Sync is installed (macOS, Ubuntu, or Windows), `dgx config set` pre-loads the host, user, port, and Sync-managed SSH key (e.g., `~/Library/Application Support/NVIDIA/Sync/config/ssh_config` on macOS, `~/.local/share/NVIDIA/Sync/config/ssh_config` on Ubuntu, `%APPDATA%/NVIDIA/Sync/config/ssh_config` on Windows). On Arch—or any system without Sync—the wizard falls back to your standard `~/.ssh/id_ed25519` / `id_rsa` keys and shows you how to generate and upload a key if needed.
 
 ### 2. Test Connection
 
@@ -250,7 +250,7 @@ identity_file: /home/user/.ssh/id_ed25519
 tunnels: []
 ```
 
-You can edit this file manually or use `dgx config set`. If NVIDIA Sync metadata is present, the CLI seeds this file automatically the first time you run it so macOS setups work without additional prompts while other distros continue to use the standard SSH key locations.
+You can edit this file manually or use `dgx config set`. If NVIDIA Sync metadata is present (macOS/Ubuntu/Windows), the CLI seeds this file automatically the first time you run it so those platforms work without additional prompts while other distros continue to use the standard SSH key locations.
 
 ## Development
 

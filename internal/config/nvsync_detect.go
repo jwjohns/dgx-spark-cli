@@ -61,22 +61,46 @@ func nvSyncConfigPaths() ([]string, error) {
 	}
 
 	var paths []string
-	join := func(parts ...string) string {
-		return filepath.Join(parts...)
+	add := func(path string) {
+		if path != "" {
+			paths = append(paths, filepath.Clean(path))
+		}
+	}
+
+	if override := os.Getenv("NV_SYNC_SSH_CONFIG"); override != "" {
+		add(override)
 	}
 
 	// macOS default install location
-	paths = append(paths, join(home, "Library", "Application Support", "NVIDIA", "Sync", "config", "ssh_config"))
+	add(filepath.Join(home, "Library", "Application Support", "NVIDIA", "Sync", "config", "ssh_config"))
 
-	// XDG-friendly Linux locations
-	xdgConfig := os.Getenv("XDG_CONFIG_HOME")
-	if xdgConfig != "" {
-		paths = append(paths, join(xdgConfig, "nvidia-sync", "ssh_config"))
-		paths = append(paths, join(xdgConfig, "NVIDIA", "Sync", "ssh_config"))
+	// Linux config locations (XDG + legacy)
+	if xdgConfig := os.Getenv("XDG_CONFIG_HOME"); xdgConfig != "" {
+		add(filepath.Join(xdgConfig, "nvidia-sync", "ssh_config"))
+		add(filepath.Join(xdgConfig, "NVIDIA", "Sync", "ssh_config"))
 	}
+	add(filepath.Join(home, ".config", "nvidia-sync", "ssh_config"))
+	add(filepath.Join(home, ".config", "NVIDIA", "Sync", "ssh_config"))
 
-	paths = append(paths, join(home, ".config", "nvidia-sync", "ssh_config"))
-	paths = append(paths, join(home, ".config", "NVIDIA", "Sync", "ssh_config"))
+	// Linux data locations (Ubuntu packages sometimes land here)
+	if xdgData := os.Getenv("XDG_DATA_HOME"); xdgData != "" {
+		add(filepath.Join(xdgData, "nvidia-sync", "ssh_config"))
+		add(filepath.Join(xdgData, "NVIDIA", "Sync", "ssh_config"))
+	}
+	add(filepath.Join(home, ".local", "share", "nvidia-sync", "ssh_config"))
+	add(filepath.Join(home, ".local", "share", "NVIDIA", "Sync", "ssh_config"))
+
+	// Windows (roaming/local AppData)
+	if appData := os.Getenv("APPDATA"); appData != "" {
+		add(filepath.Join(appData, "NVIDIA", "Sync", "config", "ssh_config"))
+	} else {
+		add(filepath.Join(home, "AppData", "Roaming", "NVIDIA", "Sync", "config", "ssh_config"))
+	}
+	if localAppData := os.Getenv("LOCALAPPDATA"); localAppData != "" {
+		add(filepath.Join(localAppData, "NVIDIA", "Sync", "config", "ssh_config"))
+	} else {
+		add(filepath.Join(home, "AppData", "Local", "NVIDIA", "Sync", "config", "ssh_config"))
+	}
 
 	return paths, nil
 }
