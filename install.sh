@@ -1,9 +1,9 @@
 #!/bin/bash
-# DGX Manager Installation Script
+# DGX Spark CLI Installation Script
 
 set -e
 
-echo "Installing DGX Manager..."
+echo "Installing DGX Spark CLI..."
 echo "========================"
 
 # Build the binary
@@ -37,7 +37,7 @@ else
 fi
 
 echo ""
-echo "✓ DGX Manager installed successfully!"
+echo "✓ DGX Spark CLI installed successfully!"
 echo ""
 echo "Get started:"
 echo "  dgx config set    # Configure your DGX connection"

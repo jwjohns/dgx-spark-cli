@@ -1,11 +1,11 @@
 #!/bin/bash
-# DGX Manager Update Script
+# DGX Spark CLI Update Script
 
 set -e
 
 cd "$(dirname "$0")"
 
-echo "Updating DGX Manager..."
+echo "Updating DGX Spark CLI..."
 echo "======================"
 
 # Pull latest changes
@@ -25,6 +25,6 @@ cp bin/dgx "$INSTALL_DIR/"
 chmod +x "$INSTALL_DIR/dgx"
 
 echo ""
-echo "✓ DGX Manager updated successfully!"
+echo "✓ DGX Spark CLI updated successfully!"
 echo ""
 dgx version

@@ -1,6 +1,6 @@
 # DGX Spark Playbooks
 
-DGX Manager includes integrated support for [NVIDIA DGX Spark Playbooks](https://github.com/NVIDIA/dgx-spark-playbooks), making it easy to run AI/ML workloads on your DGX Spark.
+DGX Spark CLI includes integrated support for [NVIDIA DGX Spark Playbooks](https://github.com/NVIDIA/dgx-spark-playbooks), making it easy to run AI/ML workloads on your DGX Spark.
 
 ## Available Playbooks
 
@@ -274,5 +274,5 @@ dgx tunnel list
 ## More Information
 
 - **Official Playbooks**: https://github.com/NVIDIA/dgx-spark-playbooks
-- **DGX Manager Docs**: [README.md](README.md)
+- **DGX Spark CLI Docs**: [README.md](README.md)
 - **Getting Help**: `dgx run <playbook> --help`

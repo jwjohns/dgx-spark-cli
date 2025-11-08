@@ -1,4 +1,4 @@
-# DGX Manager - Quick Start Guide
+# DGX Spark CLI - Quick Start Guide
 
 ## Installation
 
